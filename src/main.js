@@ -1,5 +1,7 @@
 import iziToast from "izitoast";
 import "izitoast/dist/css/iziToast.min.css";
+import SimpleLightbox from "simplelightbox";
+import "simplelightbox/dist/simple-lightbox.min.css";
 
 const API_KEY = "47599452-88585afd800a8eb35bdc3af8b";
 const BASE_URL = "https://pixabay.com/api/"
@@ -8,12 +10,11 @@ const input = document.querySelector(".search-input")
 const galleryMenu = document.querySelector(".gallery")
 form.addEventListener("submit", handleSearch)
 
-console.log(galleryMenu);
 
 function handleSearch(event) {
     event.preventDefault();
     const trimValid = input.value.trim();
-    // console.log(trimValid);
+    console.log(trimValid);
     if (!trimValid) {
         iziToast.error({
             title: "Error",
@@ -23,6 +24,16 @@ function handleSearch(event) {
         return;
     }
     
+
+ iziToast.info({
+        id: 'loading-toast',
+        title: 'Loading',
+        message: 'Fetching images, please wait...',
+        position: 'topRight',
+        timeout: false, 
+        close: false, 
+    });
+
     fetchImages(trimValid)
 
     function fetchImages(trimValid) {
@@ -34,31 +45,33 @@ function handleSearch(event) {
         safesearch: "true",
     })
 
-    fetch(`${BASE_URL}?${params}`)
-        .then((res) => {
-            if (!res.ok) {
-                throw new Error(res.statusText);
-            }
-            return res.json();
-        })
-        .then((data) => {
-            if (!data.hits.length) {
-                iziToast.error({
-            message: "Sorry, there are no images matching your search query. Please try again!",
-            position: "topRight",
-        }) 
-            }
-            // console.log(data);
-            galleryMenu.innerHTML = createMarkup(data.hits);
-        })
-        .catch(error => console.log(error))
+        fetch(`${BASE_URL}?${params}`)
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error(res.statusText);
+                }
+                return res.json();
+            })
+            .then((data) => {
+                if (!data.hits.length) {
+                    iziToast.error({
+                        message: "Sorry, there are no images matching your search query. Please try again!",
+                        position: "topRight",
+                    })
+                }
+                galleryMenu.innerHTML = createMarkup(data.hits);
+            })
+            .catch(error => console.log(error))
+            .finally(() => {
+                event.target.reset();
+                iziToast.hide({ id: 'loading-toast' });
+            })
 }
 }
 
 function createMarkup(arr) {
     return arr.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
-        console.log(webformatURL);
-        `
+        return `
         <li class="gallery-item">
         <a class="gallery-link" href="${largeImageURL}">
         <img
@@ -88,4 +101,10 @@ function createMarkup(arr) {
         </li>
     `     
     }).join("");
+
 }
+
+const lightbox = new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captionDelay: 250,
+});
