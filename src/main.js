@@ -3,108 +3,64 @@ import "izitoast/dist/css/iziToast.min.css";
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 
-const API_KEY = "47599452-88585afd800a8eb35bdc3af8b";
-const BASE_URL = "https://pixabay.com/api/"
+import { fetchImages } from "./js/pixabay-api.js";
+import { createMarkup } from "./js/render-functions.js";
 const form = document.querySelector(".search-form")
 const input = document.querySelector(".search-input")
 const galleryMenu = document.querySelector(".gallery")
+
 form.addEventListener("submit", handleSearch)
-
-
-function handleSearch(event) {
-    event.preventDefault();
-    const trimValid = input.value.trim();
-    console.log(trimValid);
-    if (!trimValid) {
-        iziToast.error({
-            title: "Error",
-            message: "Please enter a keyword to search.",
-            position: "topRight",
-        })
-        return;
-    }
-    
-
- iziToast.info({
-        id: 'loading-toast',
-        title: 'Loading',
-        message: 'Fetching images, please wait...',
-        position: 'topRight',
-        timeout: false, 
-        close: false, 
-    });
-
-    fetchImages(trimValid)
-
-    function fetchImages(trimValid) {
-    const params = new URLSearchParams({
-        key: API_KEY,
-        q: trimValid,
-        image_type: "photo",
-        orientation: "horizontal",
-        safesearch: "true",
-    })
-
-        fetch(`${BASE_URL}?${params}`)
-            .then((res) => {
-                if (!res.ok) {
-                    throw new Error(res.statusText);
-                }
-                return res.json();
-            })
-            .then((data) => {
-                if (!data.hits.length) {
-                    iziToast.error({
-                        message: "Sorry, there are no images matching your search query. Please try again!",
-                        position: "topRight",
-                    })
-                }
-                galleryMenu.innerHTML = createMarkup(data.hits);
-            })
-            .catch(error => console.log(error))
-            .finally(() => {
-                event.target.reset();
-                iziToast.hide({ id: 'loading-toast' });
-            })
-}
-}
-
-function createMarkup(arr) {
-    return arr.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
-        return `
-        <li class="gallery-item">
-        <a class="gallery-link" href="${largeImageURL}">
-        <img
-            class="gallery-image"
-            src="${webformatURL}"
-            alt="${tags}"
-         />
-        </a>
-        <ul class="gallery-item-categories-menu">
-            <li class="gallery-item-categories-menu-item">
-                <p class="categories-item-title">Likes</p>
-                <p class="categories-item-count">${likes}</p>
-            </li>
-            <li class="gallery-item-categories-menu-item">
-                <p class="categories-item-title">Views</p>
-                <p class="categories-item-count">${views}</p>
-            </li>
-            <li class="gallery-item-categories-menu-item">
-                <p class="categories-item-title">Comments</p>
-                <p class="categories-item-count">${comments}</p>
-            </li>
-            <li class="gallery-item-categories-menu-item">
-                <p class="categories-item-title">Downloads</p>
-                <p class="categories-item-count">${downloads}</p>
-            </li>
-        </ul>
-        </li>
-    `     
-    }).join("");
-
-}
 
 const lightbox = new SimpleLightbox('.gallery a', {
     captionsData: 'alt',
     captionDelay: 250,
 });
+
+function handleSearch(event) {
+    event.preventDefault();
+    const trimValid = input.value.trim();
+
+    if (!trimValid) {
+        iziToast.error({
+            title: "Error",
+            message: "Please enter a keyword to search.",
+            position: "topRight",
+        });
+        return;
+    }
+
+    iziToast.info({
+        id: 'loading-toast',
+        title: 'Loading',
+        message: 'Fetching images, please wait...',
+        position: 'topRight',
+        timeout: false,
+        close: false,
+    });
+
+    fetchImages(trimValid)
+        .then((data) => {
+            if (!data.hits.length) {
+                galleryMenu.innerHTML = ""; 
+                iziToast.error({
+                    message: "Sorry, there are no images matching your search query. Please try again!",
+                    position: "topRight",
+                });
+                return;
+            }
+            galleryMenu.innerHTML = createMarkup(data.hits);
+            lightbox.refresh(); 
+        })
+        .catch((error) => {
+            console.error(error);
+            iziToast.error({
+                title: "Error",
+                message: "An error occurred while fetching images. Please try again later.",
+                position: "topRight",
+            });
+        })
+        .finally(() => {
+            form.reset();
+            iziToast.hide({ id: 'loading-toast' });
+        });
+}
