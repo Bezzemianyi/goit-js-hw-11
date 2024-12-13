@@ -115,3 +115,12 @@
   color: #2e2f42;
   text-align: center;
 }
+
+.loader {
+  text-align: center;
+  margin-top: 32px;
+}
+
+.hidden {
+  display: none;
+}

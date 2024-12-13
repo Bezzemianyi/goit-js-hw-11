@@ -8,6 +8,7 @@ import { createMarkup } from "./js/render-functions.js";
 const form = document.querySelector(".search-form")
 const input = document.querySelector(".search-input")
 const galleryMenu = document.querySelector(".gallery")
+const loader = document.querySelector(".loader");
 
 form.addEventListener("submit", handleSearch)
 
@@ -28,15 +29,9 @@ function handleSearch(event) {
         });
         return;
     }
+    showLoader();
 
-    iziToast.info({
-        id: 'loading-toast',
-        title: 'Loading',
-        message: 'Fetching images, please wait...',
-        position: 'topRight',
-        timeout: false,
-        close: false,
-    });
+    galleryMenu.innerHTML = "";
 
     fetchImages(trimValid)
         .then((data) => {
@@ -61,6 +56,15 @@ function handleSearch(event) {
         })
         .finally(() => {
             form.reset();
-            iziToast.hide({ id: 'loading-toast' });
+            hideLoader();
         });
+}
+
+function showLoader() {
+    loader.textContent = "Loading images, please wait..."; 
+    loader.classList.remove("hidden");
+}
+
+function hideLoader() {
+    loader.classList.add("hidden");
 }
